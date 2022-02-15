@@ -1,6 +1,5 @@
 const models = require("../models");
 const Helper = require("../utils/helper");
-// const { StatusCodes } = require("http-status-codes");
 
 // Register a user
 const registerUser = async (req, res) => {
@@ -58,8 +57,40 @@ const registerUser = async (req, res) => {
 
 // Sign in a user
 const signInUser = async (req, res) => {
-  res.status(200).send({
-    message: "User signed in successfully",
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res
+      .status(400)
+      .json({ message: "Please provide email and password" });
+  }
+
+  const user = await models.User.findOne({
+    where: {
+      email: req.body.email,
+    },
+  });
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const isPasswordCorrect = await Helper.comparePassword(
+    user.password,
+    password
+  );
+
+  if (!isPasswordCorrect) {
+    return res.status(400).json({
+      message: "Please provide correct password",
+    });
+  }
+
+  const payload = { email: user.email, password: user.password };
+  const token = await Helper.generateToken(payload);
+
+  res.status(200).json({
+    message: "Logged in successfully 😊 👌",
+    token,
   });
 };
 
